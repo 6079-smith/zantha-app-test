@@ -1,9 +1,9 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { unauthenticated } from "../shopify.server";
+import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await unauthenticated.appProxy(request);
+  const { session } = await authenticate.public.appProxy(request);
   const shop = session?.shop ?? new URL(request.url).searchParams.get("shop") ?? "";
   const record = shop ? await prisma.message.findUnique({ where: { shop } }) : null;
   const text = record?.text || "No message has been set yet.";
