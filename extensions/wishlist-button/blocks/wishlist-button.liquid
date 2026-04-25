@@ -1,0 +1,46 @@
+{% if product %}
+  <button
+    type="button"
+    class="zw-wishlist-btn"
+    data-product-id="{{ product.id }}"
+    data-product-handle="{{ product.handle }}"
+    data-product-title="{{ product.title | escape }}"
+    data-product-image="{{ product.featured_image | image_url: width: 400 }}"
+    data-product-price="{{ product.price | money }}"
+    data-add-label="{{ block.settings.add_label | escape }}"
+    data-remove-label="{{ block.settings.remove_label | escape }}"
+    aria-label="{{ block.settings.add_label }}"
+    aria-pressed="false"
+    {{ block.shopify_attributes }}
+  >
+    <span class="zw-wishlist-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+      </svg>
+    </span>
+    <span class="zw-wishlist-label">{{ block.settings.add_label }}</span>
+  </button>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Wishlist button",
+  "target": "section",
+  "stylesheet": "wishlist-button.css",
+  "javascript": "wishlist-button.js",
+  "settings": [
+    {
+      "type": "text",
+      "id": "add_label",
+      "label": "Button text (not in wishlist)",
+      "default": "Add to wishlist"
+    },
+    {
+      "type": "text",
+      "id": "remove_label",
+      "label": "Button text (in wishlist)",
+      "default": "Saved"
+    }
+  ]
+}
+{% endschema %}
