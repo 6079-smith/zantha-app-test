@@ -1,0 +1,31 @@
+name = "zantha-app-test"
+client_id = "7050bec4ea9d7ce28f5fc3e14fd3e9a7"
+application_url = "https://placeholder.trycloudflare.com"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+
+[access_scopes]
+scopes = ""
+
+[auth]
+redirect_urls = [
+  "https://placeholder.trycloudflare.com/auth/callback"
+]
+
+[webhooks]
+api_version = "2024-10"
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/uninstalled"
+  topics = ["app/uninstalled"]
+
+  [[webhooks.subscriptions]]
+  topics = ["app/scopes_update"]
+  uri = "/webhooks/app/scopes_update"
+
+[app_proxy]
+url = "https://placeholder.trycloudflare.com/proxy"
+subpath = "message"
+prefix = "a"
