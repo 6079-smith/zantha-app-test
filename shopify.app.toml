@@ -1,6 +1,6 @@
 name = "zantha-app-test"
 client_id = "7050bec4ea9d7ce28f5fc3e14fd3e9a7"
-application_url = "https://web-production-8bfc7.up.railway.app"
+application_url = "https://web-production-7a9e1.up.railway.app"
 embedded = true
 
 [build]
@@ -11,7 +11,7 @@ scopes = ""
 
 [auth]
 redirect_urls = [
-  "https://web-production-8bfc7.up.railway.app/auth/callback"
+  "https://web-production-7a9e1.up.railway.app/auth/callback"
 ]
 
 [webhooks]
@@ -26,6 +26,6 @@ api_version = "2024-10"
   uri = "/webhooks/app/scopes_update"
 
 [app_proxy]
-url = "https://web-production-8bfc7.up.railway.app/proxy"
+url = "https://web-production-7a9e1.up.railway.app/proxy"
 subpath = "wishlist"
 prefix = "a"
