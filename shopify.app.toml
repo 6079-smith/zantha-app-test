@@ -27,5 +27,5 @@ api_version = "2024-10"
 
 [app_proxy]
 url = "https://web-production-8bfc7.up.railway.app/proxy"
-subpath = "message"
+subpath = "wishlist"
 prefix = "a"

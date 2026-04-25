@@ -20,6 +20,49 @@ model Message {
   updatedAt DateTime @updatedAt
 }
 
+model Wishlist {
+  id         String         @id @default(cuid())
+  shop       String
+  customerId String?
+  guestToken String?
+  shareToken String         @unique @default(cuid())
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  items      WishlistItem[]
+
+  @@unique([shop, customerId])
+  @@unique([shop, guestToken])
+  @@index([shop])
+}
+
+model WishlistItem {
+  id            String   @id @default(cuid())
+  wishlistId    String
+  productId     String
+  productHandle String
+  productTitle  String
+  productImage  String?
+  productPrice  String?
+  addedAt       DateTime @default(now())
+  wishlist      Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+
+  @@unique([wishlistId, productId])
+  @@index([wishlistId])
+}
+
+model BackInStockSubscription {
+  id         String    @id @default(cuid())
+  shop       String
+  productId  String
+  email      String
+  customerId String?
+  createdAt  DateTime  @default(now())
+  notifiedAt DateTime?
+
+  @@unique([shop, productId, email])
+  @@index([shop, productId])
+}
+
 model Session {
   id                  String    @id
   shop                String
