@@ -1,4 +1,4 @@
-name = "zantha-app-test"
+name = "zantha-wishlist"
 client_id = "7050bec4ea9d7ce28f5fc3e14fd3e9a7"
 application_url = "https://web-production-7a9e1.up.railway.app"
 embedded = true

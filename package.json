@@ -1,5 +1,5 @@
 {
-  "name": "app",
+  "name": "zantha-wishlist",
   "private": true,
   "scripts": {
     "build": "remix vite:build",
