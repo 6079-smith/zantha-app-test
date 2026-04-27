@@ -4,15 +4,11 @@ import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import {
   ownerFromProxy,
-  readGuestToken,
-  setGuestTokenHeader,
   getOrCreateWishlist,
   findWishlist,
 } from "../lib/wishlist.server";
 
-function appendCookie(headers: Headers, token?: string) {
-  if (token) headers.append("Set-Cookie", setGuestTokenHeader(token));
-}
+const UNAUTHENTICATED = json({ authenticated: false }, { status: 401 });
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.public.appProxy(request);
@@ -20,21 +16,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const url = new URL(request.url);
   const customerId = url.searchParams.get("logged_in_customer_id") || null;
-  const guestToken = readGuestToken(request);
+  const owner = ownerFromProxy(session.shop, customerId);
+  if (!owner) return UNAUTHENTICATED;
 
-  const { owner, newGuestToken } = ownerFromProxy(session.shop, customerId, guestToken);
   const wishlist = await findWishlist(owner);
-
-  const headers = new Headers({ "Content-Type": "application/json" });
-  appendCookie(headers, newGuestToken);
-
-  return new Response(
-    JSON.stringify({
-      items: wishlist?.items ?? [],
-      shareToken: wishlist?.shareToken ?? null,
-    }),
-    { headers },
-  );
+  return json({
+    authenticated: true,
+    items: wishlist?.items ?? [],
+    shareToken: wishlist?.shareToken ?? null,
+  });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -43,17 +33,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const url = new URL(request.url);
   const customerId = url.searchParams.get("logged_in_customer_id") || null;
-  const guestToken = readGuestToken(request);
-  const { owner, newGuestToken } = ownerFromProxy(session.shop, customerId, guestToken);
+  const owner = ownerFromProxy(session.shop, customerId);
+  if (!owner) return UNAUTHENTICATED;
 
   const body = await request.json().catch(() => ({}));
-  const headers = new Headers({ "Content-Type": "application/json" });
-  appendCookie(headers, newGuestToken);
 
   if (request.method === "POST") {
-    const { productId, productHandle, productTitle, productImage, productPrice } = body as Record<string, string>;
+    const { productId, productHandle, productTitle, productImage, productPrice } =
+      body as Record<string, string>;
     if (!productId || !productHandle || !productTitle) {
-      return new Response(JSON.stringify({ error: "missing_fields" }), { status: 400, headers });
+      return json({ error: "missing_fields" }, { status: 400 });
     }
     const wishlist = await getOrCreateWishlist(owner);
     await prisma.wishlistItem.upsert({
@@ -66,22 +55,25 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         productImage: productImage ?? null,
         productPrice: productPrice ?? null,
       },
-      update: { productHandle, productTitle, productImage: productImage ?? null, productPrice: productPrice ?? null },
+      update: {
+        productHandle,
+        productTitle,
+        productImage: productImage ?? null,
+        productPrice: productPrice ?? null,
+      },
     });
-    return new Response(JSON.stringify({ ok: true, shareToken: wishlist.shareToken }), { headers });
+    return json({ ok: true, shareToken: wishlist.shareToken });
   }
 
   if (request.method === "DELETE") {
     const { productId } = body as Record<string, string>;
-    if (!productId) {
-      return new Response(JSON.stringify({ error: "missing_productId" }), { status: 400, headers });
-    }
+    if (!productId) return json({ error: "missing_productId" }, { status: 400 });
     const wishlist = await findWishlist(owner);
     if (wishlist) {
       await prisma.wishlistItem.deleteMany({ where: { wishlistId: wishlist.id, productId } });
     }
-    return new Response(JSON.stringify({ ok: true }), { headers });
+    return json({ ok: true });
   }
 
-  return new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405, headers });
+  return json({ error: "method_not_allowed" }, { status: 405 });
 };
