@@ -1,0 +1,12 @@
+{
+  "name": "wishlist-page",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@shopify/ui-extensions-react": "2024.10.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.31",
+    "react": "^18.2.0"
+  }
+}

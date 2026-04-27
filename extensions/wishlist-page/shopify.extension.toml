@@ -1,0 +1,13 @@
+api_version = "2024-10"
+
+[[extensions]]
+name = "My Wishlist"
+handle = "wishlist-page"
+type = "ui_extension"
+
+[[extensions.targeting]]
+module = "./src/index.tsx"
+target = "customer-account.page.render"
+
+[extensions.capabilities]
+network_access = true
