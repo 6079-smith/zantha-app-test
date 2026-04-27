@@ -17,7 +17,6 @@ const APP_URL =
   process.env.SHOPIFY_APP_URL ?? "https://web-production-7a9e1.up.railway.app";
 
 interface WishlistItem {
-  id: string;
   productId: string;
   productHandle: string;
   productTitle: string;
@@ -98,7 +97,7 @@ function WishlistPage() {
   return (
     <BlockStack spacing="none">
       {items.map((item, i) => (
-        <View key={item.id}>
+        <View key={item.productId}>
           {i > 0 && <Divider />}
           <View padding="base">
             <InlineStack spacing="base" blockAlignment="center">

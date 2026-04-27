@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
-import { ownerFromProxy, findWishlist } from "../lib/wishlist.server";
+import { readWishlistProducts, numericId } from "../lib/wishlist.server";
 
 function escapeHtml(s: string) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -48,37 +48,46 @@ function loginCta(loginUrl: string, registerUrl: string) {
 </html>`;
 }
 
+function formatMoney(amount: string, currencyCode: string): string {
+  const num = Number(amount);
+  if (Number.isNaN(num)) return `${amount} ${currencyCode}`;
+  try {
+    return new Intl.NumberFormat("en", { style: "currency", currency: currencyCode }).format(num);
+  } catch {
+    return `${amount} ${currencyCode}`;
+  }
+}
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.public.appProxy(request);
-  if (!session) return new Response("Unauthorized", { status: 400 });
+  const { session, admin } = await authenticate.public.appProxy(request);
+  if (!session || !admin) return new Response("Unauthorized", { status: 400 });
 
   const url = new URL(request.url);
   const customerId = url.searchParams.get("logged_in_customer_id") || null;
 
   if (!customerId) {
     const origin = url.origin;
-    return new Response(
-      loginCta(`${origin}/account/login`, `${origin}/account/register`),
-      { headers: { "Content-Type": "text/html" } },
-    );
+    return new Response(loginCta(`${origin}/account/login`, `${origin}/account/register`), {
+      headers: { "Content-Type": "text/html" },
+    });
   }
 
-  const owner = ownerFromProxy(session.shop, customerId)!;
-  const wishlist = await findWishlist(owner);
-  const items = wishlist?.items ?? [];
+  const items = await readWishlistProducts(admin, customerId);
 
   const itemsHtml = items
-    .map(
-      (item) => `
-      <li class="wishlist-item" data-product-id="${escapeHtml(item.productId)}">
-        ${item.productImage ? `<img src="${escapeHtml(item.productImage)}" alt="" />` : '<div class="placeholder"></div>'}
+    .map((item) => {
+      const productNumericId = numericId(item.id);
+      const price = formatMoney(item.priceRange.minVariantPrice.amount, item.priceRange.minVariantPrice.currencyCode);
+      return `
+      <li class="wishlist-item" data-product-id="${escapeHtml(productNumericId)}">
+        ${item.featuredImage ? `<img src="${escapeHtml(item.featuredImage.url)}" alt="${escapeHtml(item.featuredImage.altText ?? "")}" />` : '<div class="placeholder"></div>'}
         <div class="info">
-          <a href="/products/${escapeHtml(item.productHandle)}" class="title">${escapeHtml(item.productTitle)}</a>
-          ${item.productPrice ? `<div class="price">${escapeHtml(item.productPrice)}</div>` : ""}
+          <a href="/products/${escapeHtml(item.handle)}" class="title">${escapeHtml(item.title)}</a>
+          <div class="price">${escapeHtml(price)}</div>
         </div>
-        <button class="remove" data-product-id="${escapeHtml(item.productId)}">Remove</button>
-      </li>`,
-    )
+        <button class="remove" data-product-id="${escapeHtml(productNumericId)}">Remove</button>
+      </li>`;
+    })
     .join("");
 
   const html = `<!DOCTYPE html>
@@ -99,8 +108,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     .price { color: #666; font-size: 0.95rem; }
     .remove { background: none; border: 1px solid #ccc; padding: 0.4rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
     .remove:hover { background: #f4f4f4; }
-    .share { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #eee; }
-    .share button { background: #1a1a1a; color: #fff; border: 0; padding: 0.6rem 1rem; border-radius: 4px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -108,11 +115,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   ${
     items.length === 0
       ? `<p class="empty">Your wishlist is empty. Browse products and tap the heart to save them.</p>`
-      : `<ul>${itemsHtml}</ul>
-         <div class="share">
-           <p>Share this wishlist:</p>
-           <button id="share-btn" data-token="${escapeHtml(wishlist?.shareToken ?? "")}">Copy share link</button>
-         </div>`
+      : `<ul>${itemsHtml}</ul>`
   }
   <script>
     document.querySelectorAll('.remove').forEach(function(btn) {
@@ -126,15 +129,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         location.reload();
       });
     });
-    var shareBtn = document.getElementById('share-btn');
-    if (shareBtn) {
-      shareBtn.addEventListener('click', function() {
-        var url = window.location.origin + '/a/wishlist/share/' + shareBtn.dataset.token;
-        navigator.clipboard.writeText(url);
-        shareBtn.textContent = 'Copied!';
-        setTimeout(function() { shareBtn.textContent = 'Copy share link'; }, 2000);
-      });
-    }
   </script>
 </body>
 </html>`;
