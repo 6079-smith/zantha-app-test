@@ -7,7 +7,7 @@ embedded = true
 automatically_update_urls_on_dev = true
 
 [access_scopes]
-scopes = ""
+scopes = "read_customer_events,read_customers,read_customer_merge,customer_read_customers,customer_read_metaobjects,customer_read_orders,unauthenticated_read_customers"
 
 [auth]
 redirect_urls = [
