@@ -6,7 +6,7 @@
     "dev": "shopify app dev",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
-    "deploy": "shopify app deploy --release",
+    "deploy": "shopify app deploy",
     "config:use": "shopify app config use",
     "env": "shopify app env",
     "start": "npm run setup && remix-serve ./build/server/index.js",
