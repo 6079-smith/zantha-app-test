@@ -18,6 +18,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await unauthenticated.admin(shop);
   const products = await readWishlistProducts(admin, customerId);
 
+  console.log("[wishlist DEBUG]", {
+    sub: sessionToken.sub,
+    dest: sessionToken.dest,
+    extractedShop: shop,
+    extractedCustomerId: customerId,
+    productCount: products.length,
+  });
+
   return cors(
     json({
       items: products.map((p) => ({
