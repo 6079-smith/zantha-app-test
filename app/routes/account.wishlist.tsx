@@ -37,15 +37,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const customerId = customerIdFromSub(String(sessionToken.sub));
 
   const body = (await request.json().catch(() => ({}))) as Record<string, string>;
-  const { productId } = body;
+  const { action: bodyAction, productId } = body;
   if (!productId) return cors(json({ error: "missing_productId" }, { status: 400 }));
 
   const { admin } = await unauthenticated.admin(shop);
 
-  if (request.method === "DELETE") {
+  if (bodyAction === "remove") {
     await removeFromWishlist(admin, customerId, productId);
     return cors(json({ ok: true }));
   }
 
-  return cors(json({ error: "method_not_allowed" }, { status: 405 }));
+  return cors(json({ error: "unknown_action" }, { status: 400 }));
 };

@@ -54,12 +54,12 @@ function WishlistPage() {
     try {
       const token = await sessionToken.get();
       await fetch(`${APP_URL}/account/wishlist`, {
-        method: "DELETE",
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ productId }),
+        body: JSON.stringify({ action: "remove", productId }),
       });
       setItems((prev) => prev.filter((i) => i.productId !== productId));
     } finally {
