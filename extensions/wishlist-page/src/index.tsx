@@ -12,6 +12,7 @@ import {
   Banner,
   View,
   Divider,
+  Modal,
 } from "@shopify/ui-extensions-react/customer-account";
 
 const APP_URL =
@@ -24,15 +25,40 @@ interface WishlistItem {
   productImage: string | null;
   productPrice: string | null;
   productUrl: string;
-  addToCartUrl: string;
+  variantId: string | null;
 }
 
+const CART_CREATE = `
+  mutation CartCreate($lines: [CartLineInput!]!) {
+    cartCreate(input: { lines: $lines }) {
+      cart { id checkoutUrl }
+      userErrors { message }
+    }
+  }
+`;
+
+const CART_LINES_ADD = `
+  mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
+    cartLinesAdd(cartId: $cartId, lines: $lines) {
+      cart { id checkoutUrl }
+      userErrors { message }
+    }
+  }
+`;
+
 function WishlistPage() {
-  const { sessionToken } = useApi();
+  const { sessionToken, query } = useApi() as {
+    sessionToken: { get: () => Promise<string> };
+    query: <T>(q: string, opts?: { variables?: Record<string, unknown> }) => Promise<{ data?: T; errors?: unknown }>;
+  };
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [adding, setAdding] = useState<string | null>(null);
+  const [cartId, setCartId] = useState<string | null>(null);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [modalAddedTitle, setModalAddedTitle] = useState<string | null>(null);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -70,6 +96,41 @@ function WishlistPage() {
     }
   };
 
+  const addToCart = async (item: WishlistItem) => {
+    if (!item.variantId) return;
+    setAdding(item.productId);
+    try {
+      const lines = [{ merchandiseId: item.variantId, quantity: 1 }];
+      let result: { cart?: { id: string; checkoutUrl: string }; userErrors?: { message: string }[] } | undefined;
+
+      if (cartId) {
+        const res = await query<{ cartLinesAdd: typeof result }>(CART_LINES_ADD, {
+          variables: { cartId, lines },
+        });
+        result = res.data?.cartLinesAdd;
+      } else {
+        const res = await query<{ cartCreate: typeof result }>(CART_CREATE, {
+          variables: { lines },
+        });
+        result = res.data?.cartCreate;
+      }
+
+      if (result?.userErrors && result.userErrors.length > 0) {
+        throw new Error(result.userErrors[0].message);
+      }
+      if (!result?.cart) throw new Error("no cart");
+
+      setCartId(result.cart.id);
+      setCheckoutUrl(result.cart.checkoutUrl);
+      setModalAddedTitle(item.productTitle);
+    } catch (e) {
+      console.error("[wishlist] addToCart failed", e);
+      setError("Could not add to cart. Please try again.");
+    } finally {
+      setAdding(null);
+    }
+  };
+
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
@@ -98,48 +159,73 @@ function WishlistPage() {
   }
 
   return (
-    <BlockStack spacing="none">
-      {items.map((item, i) => (
-        <View key={item.productId}>
-          {i > 0 && <Divider />}
-          <View padding="base">
-            <InlineStack spacing="base" blockAlignment="center">
-              {item.productImage && (
-                <View minInlineSize={72} maxInlineSize={72}>
-                  <Image
-                    source={item.productImage}
-                    alt={item.productTitle}
-                    aspectRatio={1}
-                  />
+    <>
+      <BlockStack spacing="none">
+        {items.map((item, i) => (
+          <View key={item.productId}>
+            {i > 0 && <Divider />}
+            <View padding="base">
+              <InlineStack spacing="base" blockAlignment="center">
+                {item.productImage && (
+                  <View minInlineSize={72} maxInlineSize={72}>
+                    <Image
+                      source={item.productImage}
+                      alt={item.productTitle}
+                      aspectRatio={1}
+                    />
+                  </View>
+                )}
+                <View>
+                  <BlockStack spacing="extraTight">
+                    <Link to={item.productUrl}>
+                      <Text emphasis="bold">{item.productTitle}</Text>
+                    </Link>
+                    {item.productPrice && (
+                      <Text tone="subdued">{item.productPrice}</Text>
+                    )}
+                  </BlockStack>
                 </View>
-              )}
-              <View>
-                <BlockStack spacing="extraTight">
-                  <Link to={item.productUrl}>
-                    <Text emphasis="bold">{item.productTitle}</Text>
-                  </Link>
-                  {item.productPrice && (
-                    <Text tone="subdued">{item.productPrice}</Text>
-                  )}
-                </BlockStack>
-              </View>
-              <View>
-                <InlineStack spacing="base">
-                  <Link to={item.addToCartUrl}>Add to cart</Link>
-                  <Button
-                    kind="plain"
-                    disabled={removing === item.productId}
-                    onPress={() => removeItem(item.productId)}
-                  >
-                    {removing === item.productId ? "Removing…" : "Remove"}
-                  </Button>
-                </InlineStack>
-              </View>
-            </InlineStack>
+                <View>
+                  <InlineStack spacing="base">
+                    <Button
+                      kind="secondary"
+                      disabled={!item.variantId || adding === item.productId}
+                      onPress={() => addToCart(item)}
+                    >
+                      {adding === item.productId ? "Adding…" : "Add to cart"}
+                    </Button>
+                    <Button
+                      kind="plain"
+                      disabled={removing === item.productId}
+                      onPress={() => removeItem(item.productId)}
+                    >
+                      {removing === item.productId ? "Removing…" : "Remove"}
+                    </Button>
+                  </InlineStack>
+                </View>
+              </InlineStack>
+            </View>
           </View>
-        </View>
-      ))}
-    </BlockStack>
+        ))}
+      </BlockStack>
+      {modalAddedTitle && checkoutUrl && (
+        <Modal
+          id="zw-added-modal"
+          title="Added to cart"
+          onClose={() => setModalAddedTitle(null)}
+        >
+          <BlockStack spacing="base">
+            <Text>{modalAddedTitle} was added to your cart.</Text>
+            <InlineStack spacing="base">
+              <Link to={checkoutUrl}>Checkout</Link>
+              <Button kind="plain" onPress={() => setModalAddedTitle(null)}>
+                Continue shopping
+              </Button>
+            </InlineStack>
+          </BlockStack>
+        </Modal>
+      )}
+    </>
   );
 }
 
