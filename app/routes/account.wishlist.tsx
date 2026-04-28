@@ -18,29 +18,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await unauthenticated.admin(shop);
   const products = await readWishlistProducts(admin, customerId);
 
-  // DEBUG: list all customer metafields to find the actual namespace
-  const debugRes = await admin.graphql(
-    `#graphql
-    query ListCustomerMetafields($customerId: ID!) {
-      customer(id: $customerId) {
-        metafields(first: 20) {
-          nodes { namespace key type value }
-        }
-      }
-    }`,
-    { variables: { customerId: `gid://shopify/Customer/${customerId}` } },
-  );
-  const debugData = await debugRes.json();
-
-  console.log("[wishlist DEBUG]", {
-    sub: sessionToken.sub,
-    dest: sessionToken.dest,
-    extractedShop: shop,
-    extractedCustomerId: customerId,
-    productCount: products.length,
-    allMetafields: JSON.stringify(debugData?.data?.customer?.metafields?.nodes ?? []),
-  });
-
   return cors(
     json({
       items: products.map((p) => ({

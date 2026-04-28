@@ -1,4 +1,4 @@
-const NAMESPACE = "$app";
+const NAMESPACE = "app--352686768129";
 const KEY = "wishlist";
 const TYPE = "list.product_reference";
 
