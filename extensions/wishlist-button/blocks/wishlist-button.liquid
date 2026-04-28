@@ -1,4 +1,13 @@
 {% if product %}
+  {%- assign zw_is_saved = false -%}
+  {%- if customer -%}
+    {%- for zw_p in customer.metafields.app.wishlist.value -%}
+      {%- if zw_p.id == product.id -%}
+        {%- assign zw_is_saved = true -%}
+        {%- break -%}
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endif -%}
   <button
     type="button"
     class="zw-wishlist-btn"
@@ -11,8 +20,8 @@
     data-remove-label="{{ block.settings.remove_label | escape }}"
     data-login-url="{{ routes.account_login_url }}"
     data-register-url="{{ routes.account_register_url }}"
-    aria-label="{{ block.settings.add_label }}"
-    aria-pressed="false"
+    aria-label="{% if zw_is_saved %}{{ block.settings.remove_label }}{% else %}{{ block.settings.add_label }}{% endif %}"
+    aria-pressed="{{ zw_is_saved }}"
     {{ block.shopify_attributes }}
   >
     <span class="zw-wishlist-icon" aria-hidden="true">
@@ -20,7 +29,7 @@
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
       </svg>
     </span>
-    <span class="zw-wishlist-label">{{ block.settings.add_label }}</span>
+    <span class="zw-wishlist-label">{% if zw_is_saved %}{{ block.settings.remove_label }}{% else %}{{ block.settings.add_label }}{% endif %}</span>
   </button>
 {% endif %}
 
