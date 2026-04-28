@@ -80,7 +80,6 @@ export async function readWishlistProducts(
       } | null;
     };
   };
-  console.log("[readWishlistProducts]", { namespace: NAMESPACE, key: KEY, customerId, raw: JSON.stringify(data) });
   return data?.data?.customer?.metafield?.references?.nodes ?? [];
 }
 
