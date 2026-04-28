@@ -7,6 +7,7 @@ import {
   Image,
   Text,
   Button,
+  Link,
   Spinner,
   Banner,
   View,
@@ -22,6 +23,8 @@ interface WishlistItem {
   productTitle: string;
   productImage: string | null;
   productPrice: string | null;
+  productUrl: string;
+  addToCartUrl: string;
 }
 
 function WishlistPage() {
@@ -112,20 +115,25 @@ function WishlistPage() {
               )}
               <View>
                 <BlockStack spacing="extraTight">
-                  <Text emphasis="bold">{item.productTitle}</Text>
+                  <Link to={item.productUrl}>
+                    <Text emphasis="bold">{item.productTitle}</Text>
+                  </Link>
                   {item.productPrice && (
                     <Text tone="subdued">{item.productPrice}</Text>
                   )}
                 </BlockStack>
               </View>
               <View>
-                <Button
-                  kind="plain"
-                  disabled={removing === item.productId}
-                  onPress={() => removeItem(item.productId)}
-                >
-                  {removing === item.productId ? "Removing…" : "Remove"}
-                </Button>
+                <InlineStack spacing="base">
+                  <Link to={item.addToCartUrl}>Add to cart</Link>
+                  <Button
+                    kind="plain"
+                    disabled={removing === item.productId}
+                    onPress={() => removeItem(item.productId)}
+                  >
+                    {removing === item.productId ? "Removing…" : "Remove"}
+                  </Button>
+                </InlineStack>
               </View>
             </InlineStack>
           </View>

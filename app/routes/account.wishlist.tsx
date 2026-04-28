@@ -17,16 +17,25 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const { admin } = await unauthenticated.admin(shop);
   const products = await readWishlistProducts(admin, customerId);
+  const shopOrigin = `https://${shop}`;
 
   return cors(
     json({
-      items: products.map((p) => ({
-        productId: numericId(p.id),
-        productHandle: p.handle,
-        productTitle: p.title,
-        productImage: p.featuredImage?.url ?? null,
-        productPrice: `${p.priceRange.minVariantPrice.amount} ${p.priceRange.minVariantPrice.currencyCode}`,
-      })),
+      items: products.map((p) => {
+        const variantId = p.variants.nodes[0]?.id;
+        const variantNumeric = variantId ? numericId(variantId) : null;
+        return {
+          productId: numericId(p.id),
+          productHandle: p.handle,
+          productTitle: p.title,
+          productImage: p.featuredImage?.url ?? null,
+          productPrice: `${p.priceRange.minVariantPrice.amount} ${p.priceRange.minVariantPrice.currencyCode}`,
+          productUrl: `${shopOrigin}/products/${p.handle}`,
+          addToCartUrl: variantNumeric
+            ? `${shopOrigin}/cart/${variantNumeric}:1`
+            : `${shopOrigin}/products/${p.handle}`,
+        };
+      }),
     }),
   );
 };

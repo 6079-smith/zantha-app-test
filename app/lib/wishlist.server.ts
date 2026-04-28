@@ -15,6 +15,7 @@ export interface WishlistProduct {
   handle: string;
   featuredImage: { url: string; altText: string | null } | null;
   priceRange: { minVariantPrice: { amount: string; currencyCode: string } };
+  variants: { nodes: Array<{ id: string }> };
 }
 
 export const customerGid = (id: string) => `gid://shopify/Customer/${id}`;
@@ -65,6 +66,7 @@ export async function readWishlistProducts(
                 handle
                 featuredImage { url altText }
                 priceRange { minVariantPrice { amount currencyCode } }
+                variants(first: 1) { nodes { id } }
               }
             }
           }
